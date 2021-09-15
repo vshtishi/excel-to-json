@@ -1,0 +1,81 @@
+<html lang="en">    
+
+<title> Convert Excel File To JSON </title>
+
+<head>
+    <script src="js/jquery.js"> </script>
+    <script lang="javascript" src="js/xlsx.full.min.js"></script>
+
+    <script>
+        $(document).ready(function(){
+              $("#fileUploader").change(function(evt){
+                    var selectedFile = evt.target.files[0];
+                    var reader = new FileReader();
+                    var json_object = [];
+                    reader.onload = function(event) {
+                      var data = event.target.result;
+                      var workbook = XLSX.read(data, {
+                          type: 'binary'
+                      });
+                      workbook.SheetNames.forEach(function(sheetName) {
+                        
+                          var XL_row_object = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[sheetName]);
+                          json_object = JSON.stringify(XL_row_object, null, 2);
+                          document.getElementById("jsonObject").innerHTML = json_object;
+
+                        })
+                        var jsonParsedArray = JSON.parse(json_object);
+                        var nestedArr = {};
+                        for(var i=0; i<jsonParsedArray.length; i++){
+                            var category = jsonParsedArray[i]['Category'];
+                            console.log(typeof category);
+                            nestedCat = category.substring(0, category.indexOf('/'));
+                            subCat = category.substring(category.lastIndexOf('/')+1);
+                            subCat = subCat.trim();
+                            nestedCat = nestedCat.toLowerCase();
+                            if(!(nestedArr.hasOwnProperty(nestedCat))) {
+                                Object.defineProperty(nestedArr, nestedCat, {
+                                    value: {},
+                                    enumerable: true
+
+                                });
+                            }
+                            if (!(nestedArr[nestedCat].hasOwnProperty(subCat)))
+                            Object.defineProperty(nestedArr[nestedCat], subCat, {
+                                value: {},
+                                enumerable: true
+                            });
+                            var name = jsonParsedArray[i]['Form Name'];
+                            var link = jsonParsedArray[i]['Link'];
+                            if (!(nestedArr[nestedCat][subCat].hasOwnProperty(name)))
+                                Object.defineProperty(nestedArr[nestedCat][subCat], name, {
+                                    value: link,
+                                    enumerable: true
+
+                                });
+
+                            //console.log(nestedArr);
+                        }
+                        //console.log(nestedArr);
+                       var json = JSON.stringify(nestedArr, null ,4);
+                        console.log(json);
+                        //console.log(jsonParsedArray[0]);
+                    };
+
+                    reader.onerror = function(event) {
+                      console.error("File could not be read! Code " + event.target.error.code);
+                    };
+
+                    reader.readAsBinaryString(selectedFile);
+              });
+        });
+    </script>
+
+</head>
+
+<body>
+
+    <input type="file" id="fileUploader" name="fileUploader" accept=".xls, .xlsx"/>
+    </br></br>
+    <label id="jsonObject"> JSON : </label>
+</body>
